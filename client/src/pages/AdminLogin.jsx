@@ -30,7 +30,8 @@ const AdminLogin = () => {
     setIsLoading(true)
 
     try {
-      const response = await axios.post('/api/admin/login', credentials)
+      const response = await axios.post('https://sverma-portfolio.onrender.com/api/admin/login', credentials)
+
       
       if (response.data.success) {
         localStorage.setItem('adminToken', response.data.data.token)
