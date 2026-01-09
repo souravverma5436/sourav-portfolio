@@ -1,67 +1,109 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import axios from 'axios'
+import toast from 'react-hot-toast'
+
+// Set the API base URL - use localhost for development, replace with your Render URL for production
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://your-render-backend.onrender.com' // Replace with your actual Render URL
+  : 'http://localhost:5000' // Local development
 
 const Portfolio = () => {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedProject, setSelectedProject] = useState(null)
+  const [projects, setProjects] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [imageLoadingStates, setImageLoadingStates] = useState({})
 
   const categories = [
     { id: 'all', name: 'All Projects' },
-    { id: 'logo', name: 'Logo Design' },
-    { id: 'branding', name: 'Branding' },
-    { id: 'social', name: 'Social Media' }
+    { id: 'Logo Design', name: 'Logo Design' },
+    { id: 'Branding', name: 'Branding' },
+    { id: 'Social Media Creatives', name: 'Social Media' },
+    { id: 'Posters & Ads', name: 'Posters & Ads' }
   ]
 
-  const projects = [
-    {
-      id: 1,
-      title: 'Modern Tech Logo',
-      category: 'logo',
-      description: 'Clean and modern logo design for a tech startup',
-      image: 'tech-logo',
-      tags: ['Logo', 'Branding', 'Tech']
-    },
-    {
-      id: 2,
-      title: 'Restaurant Branding',
-      category: 'branding',
-      description: 'Complete brand identity for a premium restaurant',
-      image: 'restaurant-brand',
-      tags: ['Branding', 'Identity', 'Food']
-    },
-    {
-      id: 3,
-      title: 'Social Media Campaign',
-      category: 'social',
-      description: 'Engaging social media graphics for fashion brand',
-      image: 'social-campaign',
-      tags: ['Social Media', 'Fashion', 'Campaign']
-    },
-    {
-      id: 4,
-      title: 'Fitness App Logo',
-      category: 'logo',
-      description: 'Dynamic logo design for fitness application',
-      image: 'fitness-logo',
-      tags: ['Logo', 'App', 'Fitness']
-    },
-    {
-      id: 5,
-      title: 'Coffee Shop Identity',
-      category: 'branding',
-      description: 'Warm and inviting brand identity for coffee shop',
-      image: 'coffee-brand',
-      tags: ['Branding', 'Coffee', 'Identity']
-    },
-    {
-      id: 6,
-      title: 'Instagram Stories',
-      category: 'social',
-      description: 'Creative Instagram story templates',
-      image: 'insta-stories',
-      tags: ['Social Media', 'Instagram', 'Templates']
+  useEffect(() => {
+    fetchPortfolioItems()
+  }, [])
+
+  const fetchPortfolioItems = async () => {
+    try {
+      setLoading(true)
+      const response = await axios.get(`${API_BASE_URL}/api/portfolio`)
+      setProjects(response.data.data || [])
+      
+      // Initialize image loading states
+      const loadingStates = {}
+      response.data.data?.forEach(project => {
+        loadingStates[project._id] = true
+      })
+      setImageLoadingStates(loadingStates)
+    } catch (error) {
+      console.error('Error fetching portfolio:', error)
+      // Fallback to demo data if API fails
+      const fallbackProjects = [
+        {
+          _id: '1',
+          title: 'Modern Tech Logo',
+          category: 'Logo Design',
+          description: 'Clean and modern logo design for a tech startup',
+          imageUrl: 'https://via.placeholder.com/400x300/6366f1/ffffff?text=Tech+Logo',
+          tags: ['Logo', 'Branding', 'Tech']
+        },
+        {
+          _id: '2',
+          title: 'Restaurant Branding',
+          category: 'Branding',
+          description: 'Complete brand identity for a premium restaurant',
+          imageUrl: 'https://via.placeholder.com/400x300/8b5cf6/ffffff?text=Restaurant+Brand',
+          tags: ['Branding', 'Identity', 'Food']
+        },
+        {
+          _id: '3',
+          title: 'Social Media Campaign',
+          category: 'Social Media Creatives',
+          description: 'Engaging social media graphics for fashion brand',
+          imageUrl: 'https://via.placeholder.com/400x300/06b6d4/ffffff?text=Social+Campaign',
+          tags: ['Social Media', 'Fashion', 'Campaign']
+        },
+        {
+          _id: '4',
+          title: 'Fitness App Logo',
+          category: 'Logo Design',
+          description: 'Dynamic logo design for fitness application',
+          imageUrl: 'https://via.placeholder.com/400x300/f59e0b/ffffff?text=Fitness+Logo',
+          tags: ['Logo', 'App', 'Fitness']
+        },
+        {
+          _id: '5',
+          title: 'Coffee Shop Identity',
+          category: 'Branding',
+          description: 'Warm and inviting brand identity for coffee shop',
+          imageUrl: 'https://via.placeholder.com/400x300/ef4444/ffffff?text=Coffee+Brand',
+          tags: ['Branding', 'Coffee', 'Identity']
+        },
+        {
+          _id: '6',
+          title: 'Instagram Stories',
+          category: 'Social Media Creatives',
+          description: 'Creative Instagram story templates',
+          imageUrl: 'https://via.placeholder.com/400x300/8b5cf6/ffffff?text=Insta+Stories',
+          tags: ['Social Media', 'Instagram', 'Templates']
+        }
+      ]
+      setProjects(fallbackProjects)
+      
+      // Initialize loading states for fallback data
+      const loadingStates = {}
+      fallbackProjects.forEach(project => {
+        loadingStates[project._id] = true
+      })
+      setImageLoadingStates(loadingStates)
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
 
   const filteredProjects = selectedCategory === 'all' 
     ? projects 
@@ -78,31 +120,56 @@ const Portfolio = () => {
   }
 
   const nextProject = () => {
-    const currentIndex = projects.findIndex(p => p.id === selectedProject.id)
+    const currentIndex = projects.findIndex(p => p._id === selectedProject._id)
     const nextIndex = (currentIndex + 1) % projects.length
     setSelectedProject(projects[nextIndex])
   }
 
   const prevProject = () => {
-    const currentIndex = projects.findIndex(p => p.id === selectedProject.id)
+    const currentIndex = projects.findIndex(p => p._id === selectedProject._id)
     const prevIndex = currentIndex === 0 ? projects.length - 1 : currentIndex - 1
     setSelectedProject(projects[prevIndex])
   }
 
+  const handleImageLoad = (projectId) => {
+    setImageLoadingStates(prev => ({
+      ...prev,
+      [projectId]: false
+    }))
+  }
+
+  const handleImageError = (projectId) => {
+    setImageLoadingStates(prev => ({
+      ...prev,
+      [projectId]: false
+    }))
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-16 sm:pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading portfolio...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen pt-20">
+    <div className="min-h-screen pt-16 sm:pt-20">
       {/* Header */}
-      <section className="py-20 px-4">
+      <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="text-5xl md:text-6xl font-bold text-gradient mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gradient mb-4 sm:mb-6">
               My Portfolio
             </h1>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            <p className="text-base sm:text-lg lg:text-xl text-gray-300 max-w-3xl mx-auto px-4">
               Explore my creative journey through various design projects and visual solutions
             </p>
           </motion.div>
@@ -110,10 +177,10 @@ const Portfolio = () => {
       </section>
 
       {/* Category Filter */}
-      <section className="px-4 mb-12">
+      <section className="px-4 sm:px-6 lg:px-8 mb-8 sm:mb-12">
         <div className="max-w-6xl mx-auto">
           <motion.div
-            className="flex flex-wrap justify-center gap-4"
+            className="flex flex-wrap justify-center gap-2 sm:gap-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.8 }}
@@ -122,7 +189,7 @@ const Portfolio = () => {
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
-                className={`px-6 py-3 rounded-full font-medium transition-all duration-300 cursor-hover ${
+                className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-full font-medium transition-all duration-300 cursor-hover text-sm sm:text-base ${
                   selectedCategory === category.id
                     ? 'bg-gradient-to-r from-primary to-secondary text-white'
                     : 'glass text-gray-300 hover:text-white'
@@ -136,53 +203,83 @@ const Portfolio = () => {
       </section>
 
       {/* Projects Grid */}
-      <section className="px-4 pb-20">
+      <section className="px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16 lg:pb-20">
         <div className="max-w-6xl mx-auto">
           <motion.div 
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8"
             layout
           >
             <AnimatePresence>
               {filteredProjects.map((project, index) => (
                 <motion.div
-                  key={project.id}
+                  key={project._id}
                   layout
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   transition={{ delay: index * 0.1, duration: 0.5 }}
-                  className="glass rounded-2xl overflow-hidden card-hover cursor-hover group"
+                  className="glass rounded-xl sm:rounded-2xl overflow-hidden card-hover cursor-hover group"
                   onClick={() => openModal(project)}
                   whileHover={{ y: -10 }}
                 >
                   {/* Project Image */}
-                  <div className="relative h-64 bg-gradient-to-br from-primary via-secondary to-accent overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-4xl font-bold text-white opacity-80">
-                        {project.image.split('-')[0].toUpperCase()}
-                      </span>
-                    </div>
+                  <div className="relative h-48 sm:h-56 lg:h-64 bg-gradient-to-br from-primary via-secondary to-accent overflow-hidden">
+                    {/* Loading skeleton */}
+                    {imageLoadingStates[project._id] && (
+                      <div className="absolute inset-0 loading-skeleton" />
+                    )}
+                    
+                    {/* Actual image */}
+                    {project.imageUrl ? (
+                      <img
+                        src={project.imageUrl}
+                        alt={project.title}
+                        className={`w-full h-full object-cover transition-opacity duration-300 ${
+                          imageLoadingStates[project._id] ? 'opacity-0' : 'opacity-100'
+                        }`}
+                        loading="lazy"
+                        onLoad={() => handleImageLoad(project._id)}
+                        onError={() => handleImageError(project._id)}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white opacity-80">
+                          {project.title.charAt(0)}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Hover overlay */}
                     <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <span className="text-white font-semibold">View Project</span>
+                      <span className="text-white font-semibold text-sm sm:text-base bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm">
+                        View Project
+                      </span>
                     </div>
                   </div>
 
                   {/* Project Info */}
-                  <div className="p-6">
-                    <h3 className="text-xl font-semibold mb-2 group-hover:text-primary transition-colors">
+                  <div className="p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-semibold mb-2 group-hover:text-primary transition-colors">
                       {project.title}
                     </h3>
-                    <p className="text-gray-400 mb-4">{project.description}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {project.tags.map((tag) => (
+                    <p className="text-gray-400 mb-3 sm:mb-4 text-sm sm:text-base line-clamp-2">
+                      {project.description}
+                    </p>
+                    <div className="flex flex-wrap gap-1 sm:gap-2">
+                      {project.tags?.slice(0, 3).map((tag) => (
                         <span
                           key={tag}
-                          className="px-3 py-1 bg-dark-lighter rounded-full text-sm text-gray-300"
+                          className="px-2 sm:px-3 py-1 bg-dark-lighter rounded-full text-xs sm:text-sm text-gray-300"
                         >
                           {tag}
                         </span>
                       ))}
+                      {project.tags?.length > 3 && (
+                        <span className="px-2 sm:px-3 py-1 bg-dark-lighter rounded-full text-xs sm:text-sm text-gray-300">
+                          +{project.tags.length - 3}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -212,7 +309,7 @@ const Portfolio = () => {
 
             {/* Modal Content */}
             <motion.div
-              className="relative glass rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+              className="relative glass rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
@@ -221,53 +318,68 @@ const Portfolio = () => {
               {/* Close Button */}
               <button
                 onClick={closeModal}
-                className="absolute top-4 right-4 z-10 w-10 h-10 bg-dark-light rounded-full flex items-center justify-center cursor-hover hover:bg-primary transition-colors"
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 w-8 h-8 sm:w-10 sm:h-10 bg-dark-light rounded-full flex items-center justify-center cursor-hover hover:bg-primary transition-colors"
               >
-                <span className="text-white text-xl">×</span>
+                <span className="text-white text-lg sm:text-xl">×</span>
               </button>
 
               {/* Navigation Buttons */}
-              <button
-                onClick={prevProject}
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 w-10 h-10 bg-dark-light rounded-full flex items-center justify-center cursor-hover hover:bg-primary transition-colors"
-              >
-                <span className="text-white">‹</span>
-              </button>
-              <button
-                onClick={nextProject}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 w-10 h-10 bg-dark-light rounded-full flex items-center justify-center cursor-hover hover:bg-primary transition-colors"
-              >
-                <span className="text-white">›</span>
-              </button>
+              {projects.length > 1 && (
+                <>
+                  <button
+                    onClick={prevProject}
+                    className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 sm:w-10 sm:h-10 bg-dark-light rounded-full flex items-center justify-center cursor-hover hover:bg-primary transition-colors"
+                  >
+                    <span className="text-white text-sm sm:text-base">‹</span>
+                  </button>
+                  <button
+                    onClick={nextProject}
+                    className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 sm:w-10 sm:h-10 bg-dark-light rounded-full flex items-center justify-center cursor-hover hover:bg-primary transition-colors"
+                  >
+                    <span className="text-white text-sm sm:text-base">›</span>
+                  </button>
+                </>
+              )}
 
               {/* Project Image */}
-              <div className="h-96 bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center">
-                <span className="text-6xl font-bold text-white opacity-80">
-                  {selectedProject.image.split('-')[0].toUpperCase()}
-                </span>
+              <div className="h-48 sm:h-64 lg:h-96 bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center overflow-hidden">
+                {selectedProject.imageUrl ? (
+                  <img
+                    src={selectedProject.imageUrl}
+                    alt={selectedProject.title}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <span className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white opacity-80">
+                    {selectedProject.title.charAt(0)}
+                  </span>
+                )}
               </div>
 
               {/* Project Details */}
-              <div className="p-8">
-                <h2 className="text-3xl font-bold text-gradient mb-4">
+              <div className="p-4 sm:p-6 lg:p-8">
+                <h2 className="text-2xl sm:text-3xl font-bold text-gradient mb-3 sm:mb-4">
                   {selectedProject.title}
                 </h2>
-                <p className="text-gray-300 text-lg mb-6">
+                <p className="text-gray-300 text-base sm:text-lg mb-4 sm:mb-6">
                   {selectedProject.description}
                 </p>
-                <div className="flex flex-wrap gap-3 mb-6">
-                  {selectedProject.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-4 py-2 bg-gradient-to-r from-primary to-secondary rounded-full text-sm font-medium"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <div className="text-gray-400">
-                  <p className="mb-4">
-                    This project showcases my expertise in {selectedProject.category} design, 
+                {selectedProject.tags && selectedProject.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
+                    {selectedProject.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="px-3 sm:px-4 py-1 sm:py-2 bg-gradient-to-r from-primary to-secondary rounded-full text-xs sm:text-sm font-medium"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="text-gray-400 text-sm sm:text-base">
+                  <p className="mb-3 sm:mb-4">
+                    This project showcases expertise in {selectedProject.category} design, 
                     combining creativity with strategic thinking to deliver impactful visual solutions.
                   </p>
                   <p>

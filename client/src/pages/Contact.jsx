@@ -3,13 +3,16 @@ import { motion } from 'framer-motion'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 
-// 🔗 Backend Base URL (from Netlify env)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+// Set the API base URL - use localhost for development, replace with your Render URL for production
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://your-render-backend.onrender.com' // Replace with your actual Render URL
+  : 'http://localhost:5000' // Local development
 
 const Contact = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     service: '',
     message: ''
   })
@@ -85,6 +88,7 @@ const Contact = () => {
         setFormData({
           name: '',
           email: '',
+          phone: '',
           service: '',
           message: ''
         })
@@ -107,17 +111,17 @@ const Contact = () => {
   return (
     <div className="min-h-screen pt-20">
       {/* Header */}
-      <section className="py-20 px-4">
+      <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="text-5xl md:text-6xl font-bold text-gradient mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gradient mb-4 sm:mb-6">
               Let's Work Together
             </h1>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            <p className="text-base sm:text-lg lg:text-xl text-gray-300 max-w-3xl mx-auto px-4">
               Ready to bring your vision to life? Get in touch and let's create something amazing together
             </p>
           </motion.div>
@@ -142,7 +146,7 @@ const Contact = () => {
                   placeholder="Your full name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 bg-dark-lighter border border-gray-600 rounded-xl"
+                  className="w-full px-4 py-3 bg-dark-lighter border border-gray-600 rounded-xl focus:border-primary focus:outline-none cursor-hover"
                   required
                 />
 
@@ -152,15 +156,27 @@ const Contact = () => {
                   placeholder="your.email@example.com"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 bg-dark-lighter border border-gray-600 rounded-xl"
+                  className="w-full px-4 py-3 bg-dark-lighter border border-gray-600 rounded-xl focus:border-primary focus:outline-none cursor-hover"
                   required
                 />
+
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="Phone/WhatsApp number (optional)"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 bg-dark-lighter border border-gray-600 rounded-xl focus:border-primary focus:outline-none cursor-hover"
+                />
+                <p className="text-xs text-gray-400 -mt-4 ml-1">
+                  📱 Optional - for WhatsApp or phone contact
+                </p>
 
                 <select
                   name="service"
                   value={formData.service}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 bg-dark-lighter border border-gray-600 rounded-xl"
+                  className="w-full px-4 py-3 bg-dark-lighter border border-gray-600 rounded-xl focus:border-primary focus:outline-none cursor-hover"
                   required
                 >
                   <option value="">Select a service</option>
@@ -175,16 +191,16 @@ const Contact = () => {
                   placeholder="Tell me about your project..."
                   value={formData.message}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 bg-dark-lighter border border-gray-600 rounded-xl resize-none"
+                  className="w-full px-4 py-3 bg-dark-lighter border border-gray-600 rounded-xl resize-none focus:border-primary focus:outline-none cursor-hover"
                   required
                 />
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`w-full py-4 rounded-xl font-semibold transition ${
+                  className={`w-full py-4 rounded-xl font-semibold transition cursor-hover ${
                     isSubmitting
-                      ? 'bg-gray-600'
+                      ? 'bg-gray-600 cursor-not-allowed'
                       : 'bg-gradient-to-r from-primary to-secondary hover:scale-105'
                   }`}
                 >

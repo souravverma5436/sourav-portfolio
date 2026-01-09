@@ -10,11 +10,33 @@ require('dotenv').config()
 const app = express()
 const PORT = process.env.PORT || 5000
 
+// Enhanced CORS configuration for Netlify frontend
+const corsOptions = {
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://your-netlify-site.netlify.app', // Replace with your actual Netlify URL
+    /\.netlify\.app$/,  // Allow all Netlify subdomains
+    /localhost:\d+$/    // Allow all localhost ports
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
+}
+
 // Middleware
-app.use(helmet())
-app.use(cors())
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: false
+}))
+app.use(cors(corsOptions))
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
+
+// Handle preflight requests
+app.options('*', cors(corsOptions))
 
 // MongoDB Connection
 const connectDB = async () => {
@@ -43,6 +65,13 @@ const contactSchema = new mongoose.Schema({
     lowercase: true,
     match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email']
   },
+  phone: {
+    type: String,
+    required: false,
+    trim: true,
+    maxlength: 20,
+    match: [/^[\+]?[0-9\s\-\(\)]{10,20}$/, 'Please enter a valid phone number']
+  },
   service: {
     type: String,
     required: true,
@@ -66,6 +95,89 @@ const contactSchema = new mongoose.Schema({
 })
 
 const Contact = mongoose.model('Contact', contactSchema)
+
+// Portfolio Schema
+const portfolioSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 100
+  },
+  description: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 500
+  },
+  category: {
+    type: String,
+    required: true,
+    enum: ['Logo Design', 'Branding', 'Social Media Creatives', 'Posters & Ads']
+  },
+  imageUrl: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  tags: [{
+    type: String,
+    trim: true
+  }],
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+})
+
+const Portfolio = mongoose.model('Portfolio', portfolioSchema)
+
+// Services Schema (INR pricing only)
+const serviceSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 100
+  },
+  description: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 500
+  },
+  priceINR: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  features: [{
+    type: String,
+    trim: true
+  }],
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+})
+
+const Service = mongoose.model('Service', serviceSchema)
 
 // Admin User Schema
 const adminSchema = new mongoose.Schema({
@@ -158,6 +270,90 @@ const createDefaultAdmin = async () => {
   }
 }
 
+// Create default services
+const createDefaultServices = async () => {
+  try {
+    const serviceCount = await Service.countDocuments()
+    if (serviceCount === 0) {
+      const defaultServices = [
+        {
+          name: 'Logo Design',
+          description: 'Create memorable and impactful logos that represent your brand identity perfectly',
+          priceINR: 4150,
+          features: ['Custom Logo Design', 'Multiple Concepts', 'Vector Files', 'Brand Guidelines']
+        },
+        {
+          name: 'Branding',
+          description: 'Complete brand identity solutions including logo, colors, typography, and guidelines',
+          priceINR: 16600,
+          features: ['Logo Design', 'Color Palette', 'Typography', 'Brand Guidelines', 'Business Cards']
+        },
+        {
+          name: 'Social Media Creatives',
+          description: 'Eye-catching social media graphics that boost engagement and brand awareness',
+          priceINR: 2490,
+          features: ['Instagram Posts', 'Story Templates', 'Facebook Covers', 'LinkedIn Graphics']
+        },
+        {
+          name: 'Posters & Ads',
+          description: 'Compelling poster designs and advertisements that capture attention and drive action',
+          priceINR: 3320,
+          features: ['Event Posters', 'Print Ads', 'Digital Banners', 'Promotional Materials']
+        }
+      ]
+
+      await Service.insertMany(defaultServices)
+      console.log('🎨 Default services created')
+    }
+  } catch (error) {
+    console.error('Error creating default services:', error)
+  }
+}
+
+// Create default portfolio items
+const createDefaultPortfolio = async () => {
+  try {
+    const portfolioCount = await Portfolio.countDocuments()
+    if (portfolioCount === 0) {
+      const defaultPortfolio = [
+        {
+          title: 'Modern Tech Logo',
+          category: 'Logo Design',
+          description: 'Clean and modern logo design for a tech startup',
+          imageUrl: 'https://via.placeholder.com/400x300/6366f1/ffffff?text=Tech+Logo',
+          tags: ['Logo', 'Branding', 'Tech']
+        },
+        {
+          title: 'Restaurant Branding',
+          category: 'Branding',
+          description: 'Complete brand identity for a premium restaurant',
+          imageUrl: 'https://via.placeholder.com/400x300/8b5cf6/ffffff?text=Restaurant+Brand',
+          tags: ['Branding', 'Identity', 'Food']
+        },
+        {
+          title: 'Social Media Campaign',
+          category: 'Social Media Creatives',
+          description: 'Engaging social media graphics for fashion brand',
+          imageUrl: 'https://via.placeholder.com/400x300/06b6d4/ffffff?text=Social+Campaign',
+          tags: ['Social Media', 'Fashion', 'Campaign']
+        },
+        {
+          title: 'Fitness App Logo',
+          category: 'Logo Design',
+          description: 'Dynamic logo design for fitness application',
+          imageUrl: 'https://via.placeholder.com/400x300/f59e0b/ffffff?text=Fitness+Logo',
+          tags: ['Logo', 'App', 'Fitness']
+        }
+      ]
+
+      await Portfolio.insertMany(defaultPortfolio)
+      console.log('🖼️ Default portfolio items created')
+    }
+  } catch (error) {
+    console.error('Error creating default portfolio:', error)
+  }
+}
+
 // Validation middleware
 const validateContact = [
   body('name')
@@ -168,6 +364,12 @@ const validateContact = [
     .isEmail()
     .normalizeEmail()
     .withMessage('Please enter a valid email address'),
+  body('phone')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 10, max: 20 })
+    .matches(/^[\+]?[0-9\s\-\(\)]{10,20}$/)
+    .withMessage('Please enter a valid phone number (10-20 digits)'),
   body('service')
     .isIn(['Logo Design', 'Branding', 'Social Media Creatives', 'Posters & Ads', 'Other'])
     .withMessage('Please select a valid service'),
@@ -201,12 +403,13 @@ app.post('/api/contact', validateContact, async (req, res) => {
       })
     }
 
-    const { name, email, service, message } = req.body
+    const { name, email, phone, service, message } = req.body
 
     // Create new contact message
     const newContact = new Contact({
       name,
       email,
+      phone: phone || undefined, // Only include if provided
       service,
       message
     })
@@ -445,27 +648,333 @@ app.patch('/api/admin/messages/:id/status', authenticateAdmin, async (req, res) 
   }
 })
 
-// Delete message (admin only)
-app.delete('/api/admin/messages/:id', authenticateAdmin, async (req, res) => {
+// Portfolio API Routes
+
+// Get all portfolio items
+app.get('/api/portfolio', async (req, res) => {
   try {
+    const portfolioItems = await Portfolio.find({ isActive: true })
+      .sort({ createdAt: -1 })
+      .select('-__v')
+
+    res.json({
+      success: true,
+      data: portfolioItems
+    })
+  } catch (error) {
+    console.error('❌ Get portfolio error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    })
+  }
+})
+
+// Get all portfolio items (admin only)
+app.get('/api/admin/portfolio', authenticateAdmin, async (req, res) => {
+  try {
+    const portfolioItems = await Portfolio.find()
+      .sort({ createdAt: -1 })
+      .select('-__v')
+
+    res.json({
+      success: true,
+      data: portfolioItems
+    })
+  } catch (error) {
+    console.error('❌ Get admin portfolio error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    })
+  }
+})
+
+// Create portfolio item (admin only)
+app.post('/api/admin/portfolio', authenticateAdmin, [
+  body('title').trim().isLength({ min: 1, max: 100 }).withMessage('Title is required and must be less than 100 characters'),
+  body('description').trim().isLength({ min: 1, max: 500 }).withMessage('Description is required and must be less than 500 characters'),
+  body('category').isIn(['Logo Design', 'Branding', 'Social Media Creatives', 'Posters & Ads']).withMessage('Invalid category'),
+  body('imageUrl').trim().isURL().withMessage('Valid image URL is required'),
+  body('tags').optional().isArray().withMessage('Tags must be an array')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      })
+    }
+
+    const { title, description, category, imageUrl, tags } = req.body
+
+    const newPortfolioItem = new Portfolio({
+      title,
+      description,
+      category,
+      imageUrl,
+      tags: tags || []
+    })
+
+    await newPortfolioItem.save()
+
+    res.status(201).json({
+      success: true,
+      message: 'Portfolio item created successfully',
+      data: newPortfolioItem
+    })
+  } catch (error) {
+    console.error('❌ Create portfolio error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    })
+  }
+})
+
+// Update portfolio item (admin only)
+app.put('/api/admin/portfolio/:id', authenticateAdmin, [
+  body('title').trim().isLength({ min: 1, max: 100 }).withMessage('Title is required and must be less than 100 characters'),
+  body('description').trim().isLength({ min: 1, max: 500 }).withMessage('Description is required and must be less than 500 characters'),
+  body('category').isIn(['Logo Design', 'Branding', 'Social Media Creatives', 'Posters & Ads']).withMessage('Invalid category'),
+  body('imageUrl').trim().isURL().withMessage('Valid image URL is required'),
+  body('tags').optional().isArray().withMessage('Tags must be an array')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      })
+    }
+
     const { id } = req.params
+    const { title, description, category, imageUrl, tags, isActive } = req.body
 
-    const message = await Contact.findByIdAndDelete(id)
+    const updatedItem = await Portfolio.findByIdAndUpdate(
+      id,
+      {
+        title,
+        description,
+        category,
+        imageUrl,
+        tags: tags || [],
+        isActive: isActive !== undefined ? isActive : true,
+        updatedAt: new Date()
+      },
+      { new: true }
+    )
 
-    if (!message) {
+    if (!updatedItem) {
       return res.status(404).json({
         success: false,
-        message: 'Message not found'
+        message: 'Portfolio item not found'
       })
     }
 
     res.json({
       success: true,
-      message: 'Message deleted successfully'
+      message: 'Portfolio item updated successfully',
+      data: updatedItem
+    })
+  } catch (error) {
+    console.error('❌ Update portfolio error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    })
+  }
+})
+
+// Delete portfolio item (admin only)
+app.delete('/api/admin/portfolio/:id', authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const deletedItem = await Portfolio.findByIdAndDelete(id)
+
+    if (!deletedItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Portfolio item not found'
+      })
+    }
+
+    res.json({
+      success: true,
+      message: 'Portfolio item deleted successfully'
+    })
+  } catch (error) {
+    console.error('❌ Delete portfolio error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    })
+  }
+})
+
+// Services API Routes
+
+// Get all services
+app.get('/api/services', async (req, res) => {
+  try {
+    const services = await Service.find({ isActive: true })
+      .sort({ createdAt: -1 })
+      .select('-__v')
+
+    res.json({
+      success: true,
+      data: services
+    })
+  } catch (error) {
+    console.error('❌ Get services error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    })
+  }
+})
+
+// Get all services (admin only)
+app.get('/api/admin/services', authenticateAdmin, async (req, res) => {
+  try {
+    const services = await Service.find()
+      .sort({ createdAt: -1 })
+      .select('-__v')
+
+    res.json({
+      success: true,
+      data: services
+    })
+  } catch (error) {
+    console.error('❌ Get admin services error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    })
+  }
+})
+
+// Create service (admin only)
+app.post('/api/admin/services', authenticateAdmin, [
+  body('name').trim().isLength({ min: 1, max: 100 }).withMessage('Name is required and must be less than 100 characters'),
+  body('description').trim().isLength({ min: 1, max: 500 }).withMessage('Description is required and must be less than 500 characters'),
+  body('priceINR').isNumeric().isFloat({ min: 0 }).withMessage('Price in INR must be a positive number'),
+  body('features').optional().isArray().withMessage('Features must be an array')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      })
+    }
+
+    const { name, description, priceINR, features } = req.body
+
+    const newService = new Service({
+      name,
+      description,
+      priceINR,
+      features: features || []
     })
 
+    await newService.save()
+
+    res.status(201).json({
+      success: true,
+      message: 'Service created successfully',
+      data: newService
+    })
   } catch (error) {
-    console.error('❌ Delete message error:', error)
+    console.error('❌ Create service error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    })
+  }
+})
+
+// Update service (admin only)
+app.put('/api/admin/services/:id', authenticateAdmin, [
+  body('name').trim().isLength({ min: 1, max: 100 }).withMessage('Name is required and must be less than 100 characters'),
+  body('description').trim().isLength({ min: 1, max: 500 }).withMessage('Description is required and must be less than 500 characters'),
+  body('priceINR').isNumeric().isFloat({ min: 0 }).withMessage('Price in INR must be a positive number'),
+  body('features').optional().isArray().withMessage('Features must be an array')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      })
+    }
+
+    const { id } = req.params
+    const { name, description, priceINR, features, isActive } = req.body
+
+    const updatedService = await Service.findByIdAndUpdate(
+      id,
+      {
+        name,
+        description,
+        priceINR,
+        features: features || [],
+        isActive: isActive !== undefined ? isActive : true,
+        updatedAt: new Date()
+      },
+      { new: true }
+    )
+
+    if (!updatedService) {
+      return res.status(404).json({
+        success: false,
+        message: 'Service not found'
+      })
+    }
+
+    res.json({
+      success: true,
+      message: 'Service updated successfully',
+      data: updatedService
+    })
+  } catch (error) {
+    console.error('❌ Update service error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    })
+  }
+})
+
+// Delete service (admin only)
+app.delete('/api/admin/services/:id', authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const deletedService = await Service.findByIdAndDelete(id)
+
+    if (!deletedService) {
+      return res.status(404).json({
+        success: false,
+        message: 'Service not found'
+      })
+    }
+
+    res.json({
+      success: true,
+      message: 'Service deleted successfully'
+    })
+  } catch (error) {
+    console.error('❌ Delete service error:', error)
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -495,6 +1004,8 @@ app.use((error, req, res, next) => {
 const startServer = async () => {
   await connectDB()
   await createDefaultAdmin()
+  await createDefaultServices()
+  await createDefaultPortfolio()
   
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`)
