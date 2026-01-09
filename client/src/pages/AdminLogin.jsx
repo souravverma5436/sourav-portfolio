@@ -4,6 +4,9 @@ import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 
+// ✅ Use environment variable for backend URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+
 const AdminLogin = () => {
   const [credentials, setCredentials] = useState({
     username: '',
@@ -30,9 +33,11 @@ const AdminLogin = () => {
     setIsLoading(true)
 
     try {
-      const response = await axios.post('https://sverma-portfolio.onrender.com/api/admin/login', credentials)
+      const response = await axios.post(
+        `${API_BASE_URL}/api/admin/login`, 
+        credentials
+      )
 
-      
       if (response.data.success) {
         localStorage.setItem('adminToken', response.data.data.token)
         localStorage.setItem('adminUser', JSON.stringify(response.data.data.admin))
