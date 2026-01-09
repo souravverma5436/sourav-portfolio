@@ -3,10 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 
-// Set the API base URL - use localhost for development, replace with your Render URL for production
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-render-backend.onrender.com' // Replace with your actual Render URL
-  : 'http://localhost:5000' // Local development
+// Set the API base URL - use environment variable or fallback to localhost
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
 
 const Portfolio = () => {
   const [selectedCategory, setSelectedCategory] = useState('all')
