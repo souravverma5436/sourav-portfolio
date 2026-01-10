@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 
 // Set the API base URL - use localhost for development, replace with your Render URL for production
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-render-backend.onrender.com' // Replace with your actual Render URL
+  ? 'https://sverma-portfolio.onrender.com' // Replace with your actual Render URL
   : 'http://localhost:5000' // Local development
 
 const AdminLogin = () => {
