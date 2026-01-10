@@ -42,14 +42,23 @@ app.options('*', cors(corsOptions))
 // MongoDB Connection
 const connectDB = async () => {
   try {
-    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/sourav-portfolio'
-    await mongoose.connect(mongoURI)
-    console.log('✅ MongoDB Connected Successfully')
+    const mongoURI = process.env.MONGODB_URI;
+
+    if (!mongoURI) {
+      throw new Error("MONGODB_URI is not defined in environment variables");
+    }
+
+    await mongoose.connect(mongoURI, {
+      dbName: "sourav-portfolio",
+    });
+
+    console.log("✅ MongoDB Connected Successfully");
   } catch (error) {
-    console.error('❌ MongoDB Connection Error:', error.message)
-    process.exit(1)
+    console.error("❌ MongoDB Connection Error:", error.message);
+    process.exit(1);
   }
-}
+};
+
 
 // Contact Message Schema
 const contactSchema = new mongoose.Schema({
