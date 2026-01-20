@@ -1,3 +1,4 @@
+console.log("🌍 API BASE URL =", import.meta.env.VITE_API_BASE_URL)
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'

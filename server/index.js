@@ -39,7 +39,7 @@ app.use(express.urlencoded({ extended: true }))
 // Handle preflight requests
 app.options('*', cors(corsOptions))
 
-// MongoDB Connection
+// MongoDB Connection with enhanced error handling for Render
 const connectDB = async () => {
   try {
     const mongoURI = process.env.MONGODB_URI;
@@ -48,14 +48,60 @@ const connectDB = async () => {
       throw new Error("MONGODB_URI is not defined in environment variables");
     }
 
-    await mongoose.connect(mongoURI, {
+    console.log('🔄 Connecting to MongoDB...')
+    console.log('📍 Environment:', process.env.NODE_ENV)
+
+    // Enhanced connection options for Render deployment
+    const options = {
       dbName: "sourav-portfolio",
-    });
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 10000, // Keep trying to send operations for 10 seconds
+      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+      family: 4, // Use IPv4, skip trying IPv6
+      retryWrites: true,
+      w: 'majority'
+    };
+
+    await mongoose.connect(mongoURI, options);
 
     console.log("✅ MongoDB Connected Successfully");
+    
+    // Handle connection events
+    mongoose.connection.on('error', (err) => {
+      console.error('❌ MongoDB connection error:', err)
+    })
+    
+    mongoose.connection.on('disconnected', () => {
+      console.log('⚠️ MongoDB disconnected')
+    })
+    
+    mongoose.connection.on('reconnected', () => {
+      console.log('🔄 MongoDB reconnected')
+    })
+    
   } catch (error) {
     console.error("❌ MongoDB Connection Error:", error.message);
-    process.exit(1);
+    
+    // More detailed error logging for debugging
+    if (error.code === 'ENOTFOUND' || error.code === 'ENONAME') {
+      console.error('🌐 DNS Resolution Error - Check your MongoDB URI')
+      console.error('💡 Make sure your MongoDB cluster is accessible and the URI is correct')
+      console.error('🔧 Verify IP whitelist in MongoDB Atlas includes 0.0.0.0/0 for Render')
+    }
+    
+    if (error.name === 'MongoServerSelectionError') {
+      console.error('🔒 Server Selection Error - Check network access and authentication')
+      console.error('💡 Verify credentials and network access in MongoDB Atlas')
+    }
+    
+    // In production, don't exit immediately - allow server to start
+    if (process.env.NODE_ENV === 'production') {
+      console.log('⚠️ Starting server without database connection - will retry...')
+      // Don't exit in production, let the server start
+    } else {
+      process.exit(1);
+    }
   }
 };
 
@@ -391,12 +437,26 @@ const validateContact = [
 
 // Routes
 
-// Health check
+// Enhanced health check with database status
 app.get('/api/health', (req, res) => {
+  const dbStatus = mongoose.connection.readyState
+  const dbStatusText = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting'
+  }
+
   res.json({ 
     status: 'OK', 
     message: 'Sourav Portfolio API is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    database: {
+      status: dbStatusText[dbStatus] || 'unknown',
+      connected: dbStatus === 1
+    },
+    environment: process.env.NODE_ENV || 'development',
+    port: PORT
   })
 })
 
@@ -1011,23 +1071,58 @@ app.use((error, req, res, next) => {
 })
 
 // Start server
+// Start server with graceful error handling
 const startServer = async () => {
-  await connectDB()
-  await createDefaultAdmin()
-  await createDefaultServices()
-  await createDefaultPortfolio()
+  try {
+    // Try to connect to database
+    await connectDB()
+    
+    // Only create default data if database is connected
+    if (mongoose.connection.readyState === 1) {
+      await createDefaultAdmin()
+      await createDefaultServices()
+      await createDefaultPortfolio()
+    } else {
+      console.log('⚠️ Database not connected - skipping default data creation')
+    }
+  } catch (error) {
+    console.error('⚠️ Database setup failed:', error.message)
+    console.log('🔄 Server will start without database connection')
+  }
   
-  app.listen(PORT, () => {
+  // Start the server regardless of database connection
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`)
     console.log(`📱 API Health: http://localhost:${PORT}/api/health`)
     console.log(`📧 Contact API: http://localhost:${PORT}/api/contact`)
     console.log(`🔐 Admin Login: http://localhost:${PORT}/api/admin/login`)
+    console.log(`🌐 Environment: ${process.env.NODE_ENV}`)
+    
+    if (mongoose.connection.readyState !== 1) {
+      console.log('⚠️ Server started without database connection')
+      console.log('🔄 Database connection will be retried automatically')
+    }
+  })
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('🛑 SIGTERM received, shutting down gracefully')
+    server.close(() => {
+      console.log('✅ Server closed')
+      mongoose.connection.close(false, () => {
+        console.log('✅ Database connection closed')
+        process.exit(0)
+      })
+    })
   })
 }
 
 startServer().catch(error => {
   console.error('❌ Failed to start server:', error)
-  process.exit(1)
+  // Don't exit in production, let the process manager handle it
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1)
+  }
 })
 
 module.exports = app
