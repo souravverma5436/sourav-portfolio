@@ -42,6 +42,8 @@ const Navbar = () => {
     setIsLoggedIn(false)
     navigate('/')
     setIsMobileMenuOpen(false)
+    // Trigger storage event for other components
+    window.dispatchEvent(new Event('storage'))
   }
 
   const navItems = [

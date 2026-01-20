@@ -111,9 +111,9 @@ const AdminDashboard = () => {
   const handleLogout = () => {
     localStorage.removeItem('adminToken')
     localStorage.removeItem('adminUser')
-    delete axios.defaults.headers.common['Authorization']
     // Trigger a storage event to update navbar
     window.dispatchEvent(new Event('storage'))
+    toast.success('Logged out successfully')
     navigate('/')
   }
 
