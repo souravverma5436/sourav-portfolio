@@ -10,22 +10,22 @@ require('dotenv').config()
 const app = express()
 const PORT = process.env.PORT || 5000
 
-// Enhanced CORS configuration for Netlify frontend
+// Production-ready CORS configuration
 const corsOptions = {
   origin: [
-    'http://localhost:3000',
+    'https://svfiles.netlify.app',
     'http://localhost:5173',
-    'http://localhost:5174',
-    'https://sourav-portfolio.netlify.app', // Replace with your actual Netlify URL
-    'https://your-netlify-site.netlify.app', // Replace with your actual Netlify URL
-    /\.netlify\.app$/,  // Allow all Netlify subdomains
-    /localhost:\d+$/    // Allow all localhost ports
+    'http://localhost:3000',
+    /\.netlify\.app$/
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  preflightContinue: false
 }
+
+console.log('🌐 CORS configured for origins:', corsOptions.origin)
 
 // Middleware
 app.use(helmet({
@@ -275,11 +275,17 @@ const Admin = mongoose.model('Admin', adminSchema)
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
 
 // Auth Middleware
+// Enhanced Auth Middleware with production-safe logging
 const authenticateAdmin = async (req, res, next) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '')
+    const authHeader = req.header('Authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    console.log('🔐 Auth middleware - Route:', req.method, req.path)
+    console.log('🔑 Token received:', token ? 'Yes' : 'No')
     
     if (!token) {
+      console.log('❌ No token provided')
       return res.status(401).json({
         success: false,
         message: 'Access denied. No token provided.'
@@ -290,18 +296,22 @@ const authenticateAdmin = async (req, res, next) => {
     const admin = await Admin.findById(decoded.id).select('-password')
     
     if (!admin) {
+      console.log('❌ Invalid token - admin not found')
       return res.status(401).json({
         success: false,
-        message: 'Invalid token.'
+        message: 'Invalid token. Admin not found.'
       })
     }
 
+    console.log('✅ Admin authenticated:', admin.username)
     req.admin = admin
     next()
   } catch (error) {
-    res.status(401).json({
+    console.log('❌ Token verification failed:', error.message)
+    return res.status(401).json({
       success: false,
-      message: 'Invalid token.'
+      message: 'Invalid token.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     })
   }
 }
@@ -1093,10 +1103,18 @@ const startServer = async () => {
   // Start the server regardless of database connection
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`)
-    console.log(`📱 API Health: http://localhost:${PORT}/api/health`)
-    console.log(`📧 Contact API: http://localhost:${PORT}/api/contact`)
-    console.log(`🔐 Admin Login: http://localhost:${PORT}/api/admin/login`)
     console.log(`🌐 Environment: ${process.env.NODE_ENV}`)
+    
+    // Production-safe logging - don't expose localhost URLs in production
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`📱 API Health: http://localhost:${PORT}/api/health`)
+      console.log(`📧 Contact API: http://localhost:${PORT}/api/contact`)
+      console.log(`🔐 Admin Login: http://localhost:${PORT}/api/admin/login`)
+    } else {
+      console.log(`📱 Health endpoint: /api/health`)
+      console.log(`📧 Contact endpoint: /api/contact`)
+      console.log(`🔐 Admin endpoint: /api/admin/login`)
+    }
     
     if (mongoose.connection.readyState !== 1) {
       console.log('⚠️ Server started without database connection')

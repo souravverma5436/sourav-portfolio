@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import axios from 'axios'
-import toast from 'react-hot-toast'
-
-// Set the API base URL - use environment variable or fallback to localhost
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+import { apiClient } from '../utils/api'
 
 const Services = () => {
   const [services, setServices] = useState([])
@@ -17,7 +13,7 @@ const Services = () => {
   const fetchServices = async () => {
     try {
       setLoading(true)
-      const response = await axios.get(`${API_BASE_URL}/api/services`)
+      const response = await apiClient.getServices()
       setServices(response.data.data || [])
     } catch (error) {
       console.error('Error fetching services:', error)

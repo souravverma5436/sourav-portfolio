@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
 import toast from 'react-hot-toast'
-
-// Set the API base URL - use environment variable or fallback to localhost
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+import { apiClient } from '../utils/api'
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('messages')
@@ -33,10 +30,6 @@ const AdminDashboard = () => {
       navigate('/admin/login')
       return
     }
-
-    // Set default axios configuration
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-    axios.defaults.baseURL = API_BASE_URL
     
     fetchStats()
     if (activeTab === 'messages') {
@@ -50,32 +43,27 @@ const AdminDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get('/api/admin/stats')
+      const response = await apiClient.getStats()
       setStats(response.data.data)
     } catch (error) {
       console.error('Error fetching stats:', error)
-      if (error.response?.status === 401) {
-        handleLogout()
-      }
+      // Error handling is done in the API interceptor
     }
   }
 
   const fetchMessages = async () => {
     try {
       setLoading(true)
-      const params = new URLSearchParams()
+      const params = {}
       Object.entries(filters).forEach(([key, value]) => {
-        if (value && value !== 'all') params.append(key, value)
+        if (value && value !== 'all') params[key] = value
       })
 
-      const response = await axios.get(`/api/admin/messages?${params}`)
+      const response = await apiClient.getMessages(params)
       setMessages(response.data.data.messages)
       setPagination(response.data.data.pagination)
     } catch (error) {
       console.error('Error fetching messages:', error)
-      if (error.response?.status === 401) {
-        handleLogout()
-      }
       toast.error('Failed to load messages')
     } finally {
       setLoading(false)
@@ -85,7 +73,7 @@ const AdminDashboard = () => {
   const fetchPortfolio = async () => {
     try {
       setLoading(true)
-      const response = await axios.get('/api/admin/portfolio')
+      const response = await apiClient.getAdminPortfolio()
       setPortfolio(response.data.data || [])
     } catch (error) {
       console.error('Error fetching portfolio:', error)
@@ -98,7 +86,7 @@ const AdminDashboard = () => {
   const fetchServices = async () => {
     try {
       setLoading(true)
-      const response = await axios.get('/api/admin/services')
+      const response = await apiClient.getAdminServices()
       setServices(response.data.data || [])
     } catch (error) {
       console.error('Error fetching services:', error)
@@ -110,9 +98,7 @@ const AdminDashboard = () => {
 
   const handleStatusUpdate = async (messageId, newStatus) => {
     try {
-      await axios.patch(`/api/admin/messages/${messageId}/status`, {
-        status: newStatus
-      })
+      await apiClient.updateMessageStatus(messageId, newStatus)
       toast.success('Status updated successfully')
       fetchMessages()
       fetchStats()
@@ -172,10 +158,10 @@ const AdminDashboard = () => {
         }
         
         if (editingItem) {
-          await axios.put(`/api/admin/portfolio/${editingItem._id}`, portfolioData)
+          await apiClient.updatePortfolio(editingItem._id, portfolioData)
           toast.success('Portfolio item updated successfully')
         } else {
-          await axios.post('/api/admin/portfolio', portfolioData)
+          await apiClient.createPortfolio(portfolioData)
           toast.success('Portfolio item created successfully')
         }
         fetchPortfolio()
@@ -187,10 +173,10 @@ const AdminDashboard = () => {
         }
         
         if (editingItem) {
-          await axios.put(`/api/admin/services/${editingItem._id}`, serviceData)
+          await apiClient.updateService(editingItem._id, serviceData)
           toast.success('Service updated successfully')
         } else {
-          await axios.post('/api/admin/services', serviceData)
+          await apiClient.createService(serviceData)
           toast.success('Service created successfully')
         }
         fetchServices()
@@ -207,11 +193,11 @@ const AdminDashboard = () => {
     
     try {
       if (type === 'portfolio') {
-        await axios.delete(`/api/admin/portfolio/${id}`)
+        await apiClient.deletePortfolio(id)
         toast.success('Portfolio item deleted successfully')
         fetchPortfolio()
       } else if (type === 'service') {
-        await axios.delete(`/api/admin/services/${id}`)
+        await apiClient.deleteService(id)
         toast.success('Service deleted successfully')
         fetchServices()
       }

@@ -1,10 +1,7 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import axios from 'axios'
 import toast from 'react-hot-toast'
-
-// Set the API base URL - use environment variable or fallback to localhost
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+import { apiClient } from '../utils/api'
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -75,11 +72,7 @@ const Contact = () => {
     setIsSubmitting(true)
 
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/contact`,
-        formData,
-        { timeout: 10000 }
-      )
+      const response = await apiClient.submitContact(formData)
 
       if (response.data.success) {
         toast.success("Message sent successfully! I'll get back to you soon.")

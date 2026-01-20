@@ -82,8 +82,7 @@ npm run client  # Frontend: http://localhost:5173
 1. **Backend Health Check**: http://localhost:5000/api/health
 2. **Frontend**: http://localhost:5173
 3. **Admin Login**: http://localhost:5173/admin/login
-   - Username: `admin`
-   - Password: `admin123`
+   - Use your admin credentials
 
 ## 🌐 Production Deployment
 

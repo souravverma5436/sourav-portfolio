@@ -1,14 +1,8 @@
-console.log("🌍 API BASE URL =", import.meta.env.VITE_API_BASE_URL)
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
 import toast from 'react-hot-toast'
-
-// Set the API base URL - use localhost for development, replace with your Render URL for production
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://sverma-portfolio.onrender.com' // Replace with your actual Render URL
-  : 'http://localhost:5000' // Local development
+import { apiClient } from '../utils/api'
 
 const AdminLogin = () => {
   const [credentials, setCredentials] = useState({
@@ -36,18 +30,9 @@ const AdminLogin = () => {
     setIsLoading(true)
 
     try {
-      console.log('🔍 Attempting login with:', { username: credentials.username, apiUrl: API_BASE_URL })
+      console.log('🔍 Attempting login with:', { username: credentials.username })
       
-      const response = await axios.post(
-        `${API_BASE_URL}/api/admin/login`, 
-        credentials,
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          timeout: 10000 // 10 second timeout
-        }
-      )
+      const response = await apiClient.adminLogin(credentials)
 
       console.log('✅ Login response:', response.data)
 
@@ -169,7 +154,7 @@ const AdminLogin = () => {
             transition={{ delay: 0.6, duration: 0.8 }}
             className="mt-4 sm:mt-6 text-center text-xs sm:text-sm text-gray-500"
           >
-            Default: username: admin, password: admin123
+            Authorized access only
           </motion.div>
         </div>
       </motion.div>

@@ -98,9 +98,9 @@ npm run client  # Frontend only
 - **Backend API**: http://localhost:5000
 - **Admin Dashboard**: http://localhost:5173/admin/login
 
-### Default Admin Credentials
-- **Username**: `admin`
-- **Password**: `admin123`
+### Admin Access
+- **Login URL**: /admin/login
+- **Access**: Authorized personnel only
 
 ## 📁 Project Structure
 

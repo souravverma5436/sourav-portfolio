@@ -58,8 +58,8 @@ sourav-portfolio/
 
 ## 🔑 Admin Access
 
-- **Username**: `admin`
-- **Password**: `admin123`
+- **Login URL**: /admin/login
+- **Credentials**: Contact admin for access
 
 ## 📱 API Endpoints
 
